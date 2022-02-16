@@ -1,6 +1,6 @@
 use std::{
     env::args_os,
-    fs::{create_dir, File},
+    fs::{create_dir, remove_dir_all, File},
     io::{Read, Result, Write},
     path::PathBuf,
     thread::sleep,
@@ -10,8 +10,7 @@ use std::{
 fn backup_dir_all(path: PathBuf, from: String, to: String) -> Result<()> {
     let backup_path = PathBuf::from(path.to_string_lossy().replacen(&from, &to, 1));
 
-    //  Result isn't necessary
-    drop(create_dir(backup_path.clone()));
+    create_dir(backup_path.clone()).unwrap_or_default();
 
     for rde in path.read_dir()? {
         let de = rde?;
@@ -40,8 +39,9 @@ fn main() {
         let path = PathBuf::from(path);
 
         if path.is_dir() {
-            //  Default duration of `Timer` cycle is 10 minutes
-            const DUR: Duration = Duration::from_secs(600);
+            //  Sleep for 5 minutes
+            const DUR: Duration = Duration::from_secs(300);
+
             let from = path.clone().to_string_lossy().to_string();
             let to = {
                 let mut path = from.clone().to_owned();
@@ -50,6 +50,7 @@ fn main() {
             };
 
             loop {
+                remove_dir_all(to.clone()).unwrap_or_default();
                 //  Attempt backup process
                 if let Err(error) = backup_dir_all(path.clone(), from.clone(), to.clone()) {
                     println!("{:?}", error)
